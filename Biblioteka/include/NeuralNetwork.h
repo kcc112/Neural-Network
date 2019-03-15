@@ -8,6 +8,10 @@
 #include <boost/numeric/ublas/matrix.hpp>
 #include <memory>
 
+class Point;
+
+typedef std::shared_ptr<Point> point_ptr;
+
 using namespace boost::numeric::ublas;
 
 class NeuralNetwork {
@@ -23,8 +27,10 @@ class NeuralNetwork {
 public:
     NeuralNetwork(unsigned int inputNodes, unsigned int hiddenNodes, unsigned int outputNodes);
     ~NeuralNetwork() = default;
-    int feedForward(matrix<double> input);
-
+    matrix<double> feedForward(matrix<double> input);
+    double sigmoidFunction(double x);
+    void randomizeMatrix(matrix<double> & input, int minV,int maxV);
+    void train(point_ptr point);
 };
 
 typedef std::shared_ptr<NeuralNetwork> neuralNetwork_ptr;
