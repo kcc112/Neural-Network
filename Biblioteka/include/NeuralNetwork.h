@@ -19,6 +19,7 @@ class NeuralNetwork {
     unsigned int inputNodes;
     unsigned int hiddenNodes;
     unsigned int outputNodes;
+    double lRate;
     matrix<double> weight_ih;
     matrix<double> weight_ho;
     matrix<double > bias_h;
@@ -29,6 +30,7 @@ public:
     ~NeuralNetwork() = default;
     matrix<double> feedForward(matrix<double> input);
     double sigmoidFunction(double x);
+    double dsigmoidFunction(double x);
     void randomizeMatrix(matrix<double> & input, int minV,int maxV);
     void train(point_ptr point);
 };
