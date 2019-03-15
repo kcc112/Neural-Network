@@ -14,14 +14,14 @@ using namespace boost::numeric::ublas;
 class Point {
 
     matrix<double> inputs;
-    int answer;
+    matrix<int> answer;
 
 public:
     Point() = default;
-    Point(double x, double y, int a);
+    Point(matrix<double> input, matrix<int> answer);
     ~Point() = default;
     matrix<double> getInputs();
-    int getAnswer();
+    matrix<int> getAnswer();
 };
 
 typedef std::shared_ptr<Point> point_ptr;

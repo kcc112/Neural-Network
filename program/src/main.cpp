@@ -4,10 +4,17 @@
 
 int main() {
     std::cout << "my life suck" << std::endl;
-    point_ptr point(new Point(1,0,0));
-    neuralNetwork_ptr network(new NeuralNetwork(2,2,1));
-    matrix<double> p1 = point->getInputs();
-    //network->feedForward(p1);
+    matrix<double> m1(2,1);
+    m1(0,0) = 1;
+    m1(1,0) = 0;
+
+    matrix<double> a1(2,1);
+    a1(0,0) = 1;
+    a1(1,0) = 0;
+
+    point_ptr point(new Point(m1,a1));
+    neuralNetwork_ptr network(new NeuralNetwork(2,2,2));
+
     network->train(point);
     return 0;
 }

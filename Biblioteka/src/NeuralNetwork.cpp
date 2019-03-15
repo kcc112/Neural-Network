@@ -70,14 +70,14 @@ void NeuralNetwork::randomizeMatrix(matrix<double> & input, int minV, int maxV) 
 }
 
 void NeuralNetwork::train(point_ptr point) {
+
     matrix<double> output = feedForward(point->getInputs());
     matrix<double> error(output.size1(),output.size2());
 
     //Calculate error
     //ERROR = ANSWER - OUTPUT
-    for(int i = 0; i < error.size1(); i++){
-        for(int j = 0; j < error.size2(); j++){
-            error(i,j) = output(i,j) - point->getAnswer();
-        }
-    }
+    error = point->getAnswer() - output;
+    //std::cout << error << std::endl;
+    //std::cout << output << std::endl;
+    //std::cout << point->getAnswer() << std::endl;
 }

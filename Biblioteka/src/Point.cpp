@@ -4,17 +4,15 @@
 
 #include "Point.h"
 
-Point::Point(double x, double y, int a) {
-    inputs = matrix<double>(1,2);
-    inputs(0,0) = x;
-    inputs(0,1) = y;
-    answer = a;
+Point::Point(matrix<double> input, matrix<int> answer) {
+    this->inputs = input;
+    this->answer = answer;
 }
 
 matrix<double> Point::getInputs() {
     return inputs;
 }
 
-int Point::getAnswer() {
+matrix<int> Point::getAnswer() {
     return answer;
 }
