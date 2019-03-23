@@ -2,10 +2,41 @@
 #include <boost/numeric/ublas/io.hpp>
 #include "NeuralNetwork.h"
 #include "Point.h"
+#include "File.h"
 
 int main() {
 
-    matrix<double> m1(2,1);
+    file_ptr file(new File());
+
+    std::vector<point_ptr> pointArray;
+    std::vector<int> trainData = file->readFromFile("test.txt");
+    matrix<double> m(4,1);
+    matrix<double> a(4,1);
+
+    for(int j = 0; j < trainData.size(); j+=4) {
+        for (int i = 0; i < 4; i++) {
+            m(i,0) = trainData[i+j];
+            a(i,0) = trainData[i+j];
+        }
+        point_ptr p(new Point(m, a));
+        pointArray.push_back(p);
+    }
+
+    neuralNetwork_ptr network(new NeuralNetwork(4,3,4));
+
+    for (int j = 0; j < 10000; ++j) {
+        for (int i = 0; i < 4; ++i) {
+            network->train(pointArray[i]);
+        }
+    }
+
+    file->writeToFile("Averag-error3.txt", network->getDifPow());
+
+    for (int i = 0; i < 4; i++) {
+        std::cout << network->feedForward(pointArray[i]->getInputs()) << std::endl;
+    }
+
+    /*matrix<double> m1(2,1);
     m1(0,0) = 1;
     m1(1,0) = 0;
     matrix<double> a1(1,1);
@@ -54,7 +85,7 @@ int main() {
     std::cout << network->feedForward(m1) << std::endl;
     std::cout << network->feedForward(m2) << std::endl;
     std::cout << network->feedForward(m3) << std::endl;
-    std::cout << network->feedForward(m4) << std::endl;
+    std::cout << network->feedForward(m4) << std::endl;*/
 
     return 0;
 }

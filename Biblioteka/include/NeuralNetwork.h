@@ -16,6 +16,7 @@ using namespace boost::numeric::ublas;
 
 class NeuralNetwork {
 
+    std::vector<double> difPow;
     double lRate;
     matrix<double> weight_ih;
     matrix<double> weight_ho;
@@ -31,7 +32,9 @@ public:
     double sigmoidFunction(double x);
     double dsigmoidFunction(double x);
     void randomizeMatrix(matrix<double> & input, int minV,int maxV);
+    void cost(matrix<double> input);
     void train(point_ptr point);
+    std::vector<double> getDifPow();
 };
 
 typedef std::shared_ptr<NeuralNetwork> neuralNetwork_ptr;

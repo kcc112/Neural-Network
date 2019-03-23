@@ -6,6 +6,8 @@
 #include <boost/numeric/ublas/io.hpp>
 #include <iostream>
 #include <cmath>
+#include <NeuralNetwork.h>
+
 #include "Point.h"
 #include "NeuralNetwork.h"
 
@@ -27,7 +29,7 @@ NeuralNetwork::NeuralNetwork(unsigned int inputNodes, unsigned int hiddenNodes, 
     //bias matrix for hidden layer
     bias_h = matrix<double>(hiddenNodes,1);
     //learning rate
-    lRate = 0.5;
+    lRate = 0.1;
 
     //randomizing weights and bias
     randomizeMatrix(weight_ih,-1,1);
@@ -101,6 +103,14 @@ void NeuralNetwork::randomizeMatrix(matrix<double> & input, int minV, int maxV) 
     }
 }
 
+void NeuralNetwork::cost(matrix<double> input) {
+    double sum = 0;
+    for (int i = 0; i < input.size1(); i++) {
+        sum += pow(input(i,0),2);
+    }
+    difPow.push_back(sum);
+}
+
 void NeuralNetwork::train(point_ptr point) {
 
 
@@ -111,6 +121,7 @@ void NeuralNetwork::train(point_ptr point) {
 
     //Calculate error output and hidden
     matrix<double> outputErrors = point->getAnswer() - output;
+    cost(outputErrors);
     matrix<double> weight_hot = trans(weight_ho);
     matrix<double> hiddenErrors = prod(weight_hot, outputErrors);
 
@@ -152,4 +163,8 @@ void NeuralNetwork::train(point_ptr point) {
     bias_o += gradient;
     bias_h += hiddenGradient;
 
+}
+
+std::vector<double> NeuralNetwork::getDifPow() {
+    return difPow;
 }
