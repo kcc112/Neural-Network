@@ -4,8 +4,6 @@
 #include "Point.h"
 
 int main() {
-    std::cout << "my life suck" << std::endl;
-
 
     matrix<double> m1(2,1);
     m1(0,0) = 1;
@@ -46,7 +44,7 @@ int main() {
 
     neuralNetwork_ptr network(new NeuralNetwork(2,2,1));
 
-    for (int j = 0; j < 70000; ++j) {
+    for (int j = 0; j < 10000; ++j) {
         for (int i = 0; i < 4; ++i) {
             network->train(points[i]);
         }

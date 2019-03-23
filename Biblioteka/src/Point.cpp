@@ -4,6 +4,7 @@
 
 #include "Point.h"
 
+//answer is true score
 Point::Point(matrix<double> input, matrix<int> answer) {
     this->inputs = input;
     this->answer = answer;

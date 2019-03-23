@@ -16,9 +16,6 @@ using namespace boost::numeric::ublas;
 
 class NeuralNetwork {
 
-    unsigned int inputNodes;
-    unsigned int hiddenNodes;
-    unsigned int outputNodes;
     double lRate;
     matrix<double> weight_ih;
     matrix<double> weight_ho;
@@ -29,6 +26,8 @@ public:
     NeuralNetwork(unsigned int inputNodes, unsigned int hiddenNodes, unsigned int outputNodes);
     ~NeuralNetwork() = default;
     matrix<double> feedForward(matrix<double> input);
+    matrix<double> calculateHidden(matrix<double> input);
+    matrix<double> calculateOutput(matrix<double> input);
     double sigmoidFunction(double x);
     double dsigmoidFunction(double x);
     void randomizeMatrix(matrix<double> & input, int minV,int maxV);
