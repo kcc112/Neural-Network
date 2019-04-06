@@ -27,3 +27,4 @@ public:
 typedef std::shared_ptr<Point> point_ptr;
 
 #endif //PERCEPTRON_POINT_H
+

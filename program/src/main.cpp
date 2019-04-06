@@ -1,5 +1,7 @@
 #include <iostream>
 #include <boost/numeric/ublas/io.hpp>
+#include <string>
+#include <chrono>
 #include "NeuralNetwork.h"
 #include "Point.h"
 #include "File.h"
@@ -7,85 +9,73 @@
 int main() {
 
     file_ptr file(new File());
+    std::string fileName;
+    int networkInput;
+    int networkOutput;
+    int hiddenNeurons;
+    int hiddenSize;
+    int period;
+    int trainingSize;
+    int bias;
+    double momentum;
+    double lRate;
 
+
+    std::cout << "Podaj nazwe pliku z danymi do nauki" << std::endl;
+    std::cin >> fileName;
+    std::cout << "Podaj ilosc wejsc do sieci" << std::endl;
+    std::cin >> networkInput;
+    std::cout << "Podaj ilosc wyjsc z sieci" << std::endl;
+    std::cin >> networkOutput;
+    std::cout << "Podaj ilosc neuronow w warstwie ukrytej" << std::endl;
+    std::cin >> hiddenNeurons;
+    std::cout << "Podaj ilosc warstw ukrytych" << std::endl;
+    std::cin >> hiddenSize;
+    std::cout << "Podaj ilosc epok" << std::endl;
+    std::cin >> period;
+    std::cout << "Podaj rozmiar zbioru treningowego" << std::endl;
+    std::cin >> trainingSize;
+    std::cout << "Podaj momentum" << std::endl;
+    std::cin >> momentum;
+    std::cout << "Podaj learning rate" << std::endl;
+    std::cin >> lRate;
+    std::cout << "Z biasem 1 bez biasu 2" << std::endl;
+    std::cin >> bias;
+
+    std::vector<int> trainData = file->readFromFile(fileName);
     std::vector<point_ptr> pointArray;
-    std::vector<int> trainData = file->readFromFile("test.txt");
-    matrix<double> m(4,1);
-    matrix<double> a(4,1);
+    matrix<double> m(networkInput,1);
+    matrix<double> a(networkInput,1);
 
-    for(int j = 0; j < trainData.size(); j+=4) {
-        for (int i = 0; i < 4; i++) {
-            m(i,0) = trainData[i+j];
-            a(i,0) = trainData[i+j];
+    for(int j = 0; j < trainData.size(); j += networkInput * 2) {
+        int k = 0;
+        for (int i = 0; i < networkInput; i++) {
+            m(i,0) = trainData[k + j];
+            a(i,0) = trainData[k + j + 1];
+            k += 2;
         }
         point_ptr p(new Point(m, a));
         pointArray.push_back(p);
     }
 
-    neuralNetwork_ptr network(new NeuralNetwork(4,3,4));
+    auto start = std::chrono::steady_clock::now();
+    neuralNetwork_ptr network(new NeuralNetwork(networkInput, hiddenNeurons, networkOutput, hiddenSize, period, trainingSize, momentum, lRate, bias));
 
-    for (int j = 0; j < 10000; ++j) {
-        for (int i = 0; i < 4; ++i) {
-            network->train(pointArray[i]);
+    for (int j = 0; j < period; j++) {
+        for (int i = 0; i < networkInput; i++) {
+            network->trainNew(pointArray[i]);
         }
     }
+    auto end = std::chrono::steady_clock::now();
+    std::cout << std::chrono::duration_cast<std::chrono::milliseconds>(end -start).count() << std::endl;
+    std::cout << std::chrono::duration_cast<std::chrono::seconds>(end -start).count() << std::endl;
+    file->writeToFile("Averag-error.txt", network->getDifPow(), networkOutput, trainingSize);
+    std::cout << network->getDifPow().size() << std::endl;
 
-    file->writeToFile("Averag-error3.txt", network->getDifPow());
-
-    for (int i = 0; i < 4; i++) {
-        std::cout << network->feedForward(pointArray[i]->getInputs()) << std::endl;
+    std::cout << std::endl;
+    for (int i = 0; i < networkInput; i++) {
+        std::cout << network->feedForwardNew(pointArray[i]->getInputs()) << std::endl;
     }
-
-    /*matrix<double> m1(2,1);
-    m1(0,0) = 1;
-    m1(1,0) = 0;
-    matrix<double> a1(1,1);
-    a1(0,0) = 1;
-
-    matrix<double> m2(2,1);
-    m2(0,0) = 0;
-    m2(1,0) = 1;
-    matrix<double> a2(1,1);
-    a2(0,0) = 1;
-
-    matrix<double> m3(2,1);
-    m3(0,0) = 0;
-    m3(1,0) = 0;
-    matrix<double> a3(1,1);
-    a3(0,0) = 0;
-
-    matrix<double> m4(2,1);
-    m4(0,0) = 1;
-    m4(1,0) = 1;
-    matrix<double> a4(1,1);
-    a4(0,0) = 0;
-
-    point_ptr point1(new Point(m1,a1));
-    point_ptr point2(new Point(m2,a2));
-    point_ptr point3(new Point(m3,a3));
-    point_ptr point4(new Point(m4,a4));
-
-
-    point_ptr points[4];
-
-    points[0] = point1;
-    points[1] = point2;
-    points[2] = point3;
-    points[3] = point4;
-
-    neuralNetwork_ptr network(new NeuralNetwork(2,2,1));
-
-    for (int j = 0; j < 10000; ++j) {
-        for (int i = 0; i < 4; ++i) {
-            network->train(points[i]);
-        }
-    }
-
-
-    std::cout << network->feedForward(m1) << std::endl;
-    std::cout << network->feedForward(m2) << std::endl;
-    std::cout << network->feedForward(m3) << std::endl;
-    std::cout << network->feedForward(m4) << std::endl;*/
 
     return 0;
 }

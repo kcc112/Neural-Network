@@ -26,7 +26,7 @@ std::vector<int> File::readFromFile(std::string filename) {
     return output;
 }
 
-void File::writeToFile(std::string filename, std::vector<double> input) {
+void File::writeToFile(std::string filename, std::vector<double> input, unsigned int outputNodes, unsigned int trainingSize) {
 
     std::string line;
     std::fstream file;
@@ -35,14 +35,14 @@ void File::writeToFile(std::string filename, std::vector<double> input) {
     if(file.good())
     {
         double sum = 0;
-        for( int i = 0; i < input.size();) {
-            for ( int j = 0; j < 10 + i; j ++) {
-                sum += input[j];
+        int era = 1;
+        for(int i = 0; i < input.size(); i += trainingSize) {
+            for(int j = 0; j < trainingSize; j++) {
+                sum += input[i + j];
             }
-            i += 10;
-            double output = sum / i;
+            file << era << " " << sum / (2 * outputNodes * trainingSize) << std::endl;
+            era ++;
             sum = 0;
-            file << i << " " << output << std::endl;
         }
         file.close();
     }

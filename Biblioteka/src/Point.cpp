@@ -17,3 +17,4 @@ matrix<double> Point::getInputs() {
 matrix<int> Point::getAnswer() {
     return answer;
 }
+

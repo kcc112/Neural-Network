@@ -14,7 +14,7 @@ public:
     File() = default;
     ~File() = default;
     std::vector<int> readFromFile(std::string filename);
-    void writeToFile(std::string filename, std::vector<double> input);
+    void writeToFile(std::string filename, std::vector<double> input, unsigned int outputNodes, unsigned int trainingSize);
 
 };
 

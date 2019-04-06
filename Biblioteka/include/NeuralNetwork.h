@@ -16,24 +16,29 @@ using namespace boost::numeric::ublas;
 
 class NeuralNetwork {
 
+    unsigned int inputNodes;
+    unsigned int hiddenNodes;
+    unsigned int outputNodes;
+    unsigned int hiddenSize;
     std::vector<double> difPow;
+    int biaSS;
     double lRate;
-    matrix<double> weight_ih;
-    matrix<double> weight_ho;
-    matrix<double > bias_h;
-    matrix<double> bias_o;
+    double momentum;
+    std::vector<matrix<double>> weights;
+    std::vector<matrix<double>> biasWeights;
+    std::vector<matrix<double>> momentumWeights;
 
 public:
-    NeuralNetwork(unsigned int inputNodes, unsigned int hiddenNodes, unsigned int outputNodes);
+    NeuralNetwork(unsigned int inputNodes, unsigned int hiddenNodes, unsigned int outputNodes, unsigned int hiddenSize, unsigned int period, unsigned int trainingSize, double momentum, double lRate, int biaS);
     ~NeuralNetwork() = default;
-    matrix<double> feedForward(matrix<double> input);
-    matrix<double> calculateHidden(matrix<double> input);
-    matrix<double> calculateOutput(matrix<double> input);
+    matrix<double> feedForwardNew(const matrix<double> & input);
+    matrix<double> calculateHiddenNew(const matrix<double> & input, int i);
+    matrix<double> calculateOutputNew(const matrix<double> & input);
     double sigmoidFunction(double x);
     double dsigmoidFunction(double x);
-    void randomizeMatrix(matrix<double> & input, int minV,int maxV);
-    void cost(matrix<double> input);
-    void train(point_ptr point);
+    void randomizeMatrix(matrix<double> & input, double minV,double maxV);
+    void cost(const matrix<double> & input);
+    void trainNew(const point_ptr & point);
     std::vector<double> getDifPow();
 };
 

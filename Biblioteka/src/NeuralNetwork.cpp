@@ -6,47 +6,88 @@
 #include <boost/numeric/ublas/io.hpp>
 #include <iostream>
 #include <cmath>
-#include <NeuralNetwork.h>
-
 #include "Point.h"
 #include "NeuralNetwork.h"
 
 //create a three layer neural network
-NeuralNetwork::NeuralNetwork(unsigned int inputNodes, unsigned int hiddenNodes, unsigned int outputNodes) {
+NeuralNetwork::NeuralNetwork(unsigned int inputNodes, unsigned int hiddenNodes, unsigned int outputNodes, unsigned int hiddenSize,  unsigned int period, unsigned int trainingSize, double momentum, double lRate, int biaS) {
 
-    srand(time(NULL));
-    //sum of nodes in every layer
-    //this->inputNodes = inputNodes;
-    //this->hiddenNodes = hiddenNodes;
-    //this->outputNodes = outputNodes;
+    srand(time(nullptr));
+    this->inputNodes = inputNodes;
+    this->hiddenNodes = hiddenNodes;
+    this->outputNodes = outputNodes;
+    this->hiddenSize = hiddenSize;
+    this->biaSS = biaS;
+    this->lRate = lRate;
+    this->momentum = momentum;
 
-    //weight matrix between input and hidden layer
-    weight_ih = matrix<double>(hiddenNodes,inputNodes);
-    //weight matrix between hidden and output layer
-    weight_ho = matrix<double>(outputNodes,hiddenNodes);
-    //bias matrix for output layer
-    bias_o = matrix<double>(outputNodes,1);
-    //bias matrix for hidden layer
-    bias_h = matrix<double>(hiddenNodes,1);
-    //learning rate
-    lRate = 0.1;
+    difPow.reserve(period * trainingSize);
+    weights.reserve(hiddenSize + 1);
+    if(biaSS == 1) {
+        biasWeights.reserve(hiddenSize + 1);
+    }
+    momentumWeights.reserve(hiddenSize + 1);
 
-    //randomizing weights and bias
-    randomizeMatrix(weight_ih,-1,1);
-    randomizeMatrix(weight_ho,-1,1);
-    randomizeMatrix(bias_o,-1,1);
-    randomizeMatrix(bias_h,-1,1);
+    if(hiddenSize > 2) {
+        if(biaSS == 1) {
+            biasWeights[0] = matrix<double>(hiddenNodes, 1);
+        }
+        weights[0] = matrix<double>(hiddenNodes, inputNodes);
+        momentumWeights[0] = matrix<double>(hiddenNodes, inputNodes);
+
+        for(int i = 0; i < hiddenSize - 1; i++) {
+            if(biaSS == 1) {
+                biasWeights[i + 1] = matrix<double>(hiddenNodes, 1);
+            }
+            weights[i + 1] = matrix<double >(hiddenNodes, hiddenNodes);
+            momentumWeights[i + 1] = matrix<double >(hiddenNodes, hiddenNodes);
+        }
+
+        momentumWeights[hiddenSize] = matrix<double>(outputNodes, hiddenNodes);
+        weights[hiddenSize] = matrix<double>(outputNodes, hiddenNodes);
+        if(biaSS == 1) {
+            biasWeights[hiddenSize] = matrix<double>(outputNodes, 1);
+        }
+
+    } else if(hiddenSize == 1) {
+        weights[0] = matrix<double>(hiddenNodes, inputNodes);
+        weights[1] = matrix<double>(outputNodes, hiddenNodes);
+        momentumWeights[0] = matrix<double>(hiddenNodes, inputNodes);
+        momentumWeights[1] = matrix<double>(outputNodes, hiddenNodes);
+        if(biaSS == 1) {
+            biasWeights[0] = matrix<double>(hiddenNodes, 1);
+            biasWeights[1] = matrix<double>(outputNodes, 1);
+        }
+
+
+    } else if(hiddenSize == 2) {
+        weights[0] = matrix<double>(hiddenNodes, inputNodes);
+        weights[1] = matrix<double>(hiddenNodes, hiddenNodes);
+        weights[2] = matrix<double>(outputNodes, hiddenNodes);
+        momentumWeights[0] = matrix<double>(hiddenNodes, inputNodes);
+        momentumWeights[1] = matrix<double>(hiddenNodes, hiddenNodes);
+        momentumWeights[2] = matrix<double>(outputNodes, hiddenNodes);
+        if(biaSS == 1) {
+            biasWeights[0] = matrix<double>(hiddenNodes, 1);
+            biasWeights[1] = matrix<double>(hiddenNodes, 1);
+            biasWeights[2] = matrix<double>(outputNodes, 1);
+        }
+    }
+
+    for(int i = 0; i < hiddenSize + 1; i++) {
+        randomizeMatrix(weights[i], -0.5, 0.5);
+        if(biaSS == 1) {
+            randomizeMatrix(biasWeights[i], -0.5, 0.5);
+        }
+    }
 }
 
-matrix<double> NeuralNetwork::calculateHidden(matrix<double> input) {
-
-    //create matrix for hidden output (h[i,j])
-    matrix<double> hidden(weight_ih.size1(),input.size2());
-    //multiplying weight array  between input and hidden by inputs
-    hidden = prod(weight_ih, input);
-    //adding to product  of multiplication bias weight matrix
-    hidden += bias_h;
-    //activation function in use
+matrix<double> NeuralNetwork::calculateHiddenNew(const matrix<double> & input, int number) {
+    matrix<double> hidden(weights[number].size1(), input.size2());
+    hidden = prod(weights[number], input);
+    if(biaSS == 1) {
+        hidden += biasWeights[number];
+    }
     for(int i = 0; i < hidden.size1(); i++){
         for(int j = 0; j < hidden.size2(); j++){
             hidden(i,j) = sigmoidFunction(hidden(i,j));
@@ -55,14 +96,12 @@ matrix<double> NeuralNetwork::calculateHidden(matrix<double> input) {
     return hidden;
 }
 
-matrix<double> NeuralNetwork::calculateOutput(matrix<double> hidden) {
-
-    matrix<double> output(weight_ho.size1(),hidden.size2());
-    //multiplying weight array  between hidden and output by inputs
-    output = prod(weight_ho, hidden);
-    //adding to product  of multiplication bias weight matrix
-    output += bias_o;
-    //activation function in use
+matrix<double> NeuralNetwork::calculateOutputNew(const matrix<double> & hidden) {
+    matrix<double> output(weights[hiddenSize].size1(), hidden.size2());
+    output = prod(weights[hiddenSize], hidden);
+    if(biaSS == 1) {
+        output += biasWeights[hiddenSize];
+    }
     for(int i = 0; i < output.size1(); i++){
         for(int j = 0; j < output.size2(); j++){
             output(i,j) = sigmoidFunction(output(i,j));
@@ -71,14 +110,15 @@ matrix<double> NeuralNetwork::calculateOutput(matrix<double> hidden) {
     return output;
 }
 
-//implementation feed forward algorithm
-matrix<double> NeuralNetwork::feedForward(matrix<double> input) {
+matrix<double> NeuralNetwork::feedForwardNew(const matrix<double> & input) {
 
-    //calculate hidden
-    matrix<double> hidden = calculateHidden(input);
-    //calculate output
-    matrix<double> output = calculateOutput(hidden);
+    matrix<double> hidden = calculateHiddenNew(input, 0);
+    matrix<double> output;
 
+    for(int i = 0; i < hiddenSize - 1; i++) {
+        hidden = calculateHiddenNew(hidden, i + 1);
+    }
+    output = calculateOutputNew(hidden);
     return output;
 }
 
@@ -94,7 +134,7 @@ double NeuralNetwork::dsigmoidFunction(double x) {
 }
 
 
-void NeuralNetwork::randomizeMatrix(matrix<double> & input, int minV, int maxV) {
+void NeuralNetwork::randomizeMatrix(matrix<double> & input, double minV, double maxV) {
 
     for(int i = 0; i < input.size1(); i++){
         for(int j = 0; j < input.size2(); j++){
@@ -103,7 +143,7 @@ void NeuralNetwork::randomizeMatrix(matrix<double> & input, int minV, int maxV) 
     }
 }
 
-void NeuralNetwork::cost(matrix<double> input) {
+void NeuralNetwork::cost(const matrix<double> & input) {
     double sum = 0;
     for (int i = 0; i < input.size1(); i++) {
         sum += pow(input(i,0),2);
@@ -111,25 +151,41 @@ void NeuralNetwork::cost(matrix<double> input) {
     difPow.push_back(sum);
 }
 
-void NeuralNetwork::train(point_ptr point) {
 
+void NeuralNetwork::trainNew(const point_ptr & point) {
 
-    //Feed forward part
     matrix<double> input = point->getInputs();
-    matrix<double> hidden = calculateHidden(input);
-    matrix<double> output = calculateOutput(hidden);
+    std::vector<matrix<double>> hidden(hiddenSize);
+    std::vector<matrix<double>> hiddenT(hiddenSize);
+    std::vector<matrix<double>> hiddenGradient(hiddenSize);
 
-    //Calculate error output and hidden
+
+    for(int i = 0; i < hiddenSize; i++) {
+        hidden[i] = matrix<double>(hiddenNodes, 1);
+        hiddenT[i] = matrix<double>(1, hiddenNodes);
+        if(i == 0) {
+            hidden[i] = prod(weights[i], input);
+        } else {
+            hidden[i] = prod(weights[i], hidden[i - 1]);
+        }
+        if(biaSS == 1) {
+            hidden[i] += biasWeights[i];
+        }
+        for(int z = 0; z < hidden[i].size1(); z++){
+            for(int j = 0; j < hidden[i].size2(); j++){
+                hidden[i](z,j) = sigmoidFunction(hidden[i](z,j));
+            }
+        }
+    }
+
+
+    matrix<double> output = calculateOutputNew(hidden[hiddenSize - 1]);
+
     matrix<double> outputErrors = point->getAnswer() - output;
     cost(outputErrors);
-    matrix<double> weight_hot = trans(weight_ho);
-    matrix<double> hiddenErrors = prod(weight_hot, outputErrors);
-
-
-    /////////adjusting weights with calculated errors/////////////
 
     matrix<double> gradient = output;
-    matrix<double> hiddenGradient = hidden;
+    hiddenGradient = hidden;
 
 
     for(int i = 0; i < gradient.size1(); i++){
@@ -139,30 +195,47 @@ void NeuralNetwork::train(point_ptr point) {
         }
     }
 
-    gradient *= lRate;
-    matrix<double> hiddenT = trans(hidden);
-    matrix<double> weight_ho_deltas = prod(gradient, hiddenT);
-    //tuning weight matrix between hidden and output
-    weight_ho += weight_ho_deltas;
 
-
-    for(int i = 0; i < hiddenGradient.size1(); i++){
-        for(int j = 0; j < hiddenGradient.size2(); j++){
-            hiddenGradient(i,j) = dsigmoidFunction(hiddenGradient(i,j));
-            hiddenGradient(i,j) *= hiddenErrors(i,j);
-        }
+    for(int i = 0; i < hiddenSize; i++) {
+        hiddenT[i] = trans(hidden[i]);
     }
 
-    hiddenGradient *= lRate;
-    matrix<double> inputsT = trans(point->getInputs());
-    matrix<double> weight_ih_deltas = prod(hiddenGradient,inputsT);
-    //tuning weight matrix between input and hidden
-    weight_ih += weight_ih_deltas;
+    matrix<double> weight_ho_deltas = prod(gradient, hiddenT[hiddenSize - 1]);
+    matrix<double> weight_hot = trans(weights[hiddenSize]);
+    matrix<double> hiddenErrors = prod(weight_hot, gradient);
+    weight_ho_deltas *= lRate;
+    weights[hiddenSize] += weight_ho_deltas + momentum * momentumWeights[hiddenSize];
+    if(biaSS == 1) {
+        biasWeights[hiddenSize] += gradient;
+    }
+    momentumWeights[hiddenSize] = weight_ho_deltas + momentum * momentumWeights[hiddenSize];
 
-    //tuning bias
-    bias_o += gradient;
-    bias_h += hiddenGradient;
 
+    for(int i = hiddenSize; i > 0; i--) {
+        for(int z = 0; z < hiddenGradient[i - 1].size1(); z++){
+            for(int j = 0; j < hiddenGradient[i - 1].size2(); j++){
+                hiddenGradient[i - 1](z,j) = dsigmoidFunction(hiddenGradient[i - 1](z,j));
+                hiddenGradient[i - 1](z,j) *= hiddenErrors(z,j);
+            }
+        }
+
+
+        if(i - 1 != 0) {
+            hiddenErrors += prod(trans(weights[i - 1]), hiddenGradient[i - 1]);
+        }
+        hiddenGradient[i - 1] *= lRate;
+        matrix<double> weight_ih_deltas;
+        if(i - 1 == 0) {
+            weight_ih_deltas = prod(hiddenGradient[i - 1], trans(point->getInputs()));
+        } else {
+            weight_ih_deltas = prod(hiddenGradient[i - 1], hiddenT[i - 2]);
+        }
+        weights[i - 1] += weight_ih_deltas + momentum * momentumWeights[i - 1];
+        if(biaSS == 1) {
+            biasWeights[i - 1] += hiddenGradient[i - 1];
+        }
+        momentumWeights[i - 1] = weight_ih_deltas + momentum * momentumWeights[i - 1];
+    }
 }
 
 std::vector<double> NeuralNetwork::getDifPow() {
